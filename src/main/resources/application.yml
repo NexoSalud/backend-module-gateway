@@ -1,0 +1,74 @@
+spring:
+  r2dbc:
+    url: r2dbc:h2:mem:///devdb?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  application:
+    name: session-service
+  webflux:
+    base-path: /api/v1
+logging:
+  level:
+    org.springframework.data.r2dbc: Debug
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationAndValidation1234567890}
+  expiration: ${JWT_EXPIRATION:3600000}
+
+# Authentication Configuration
+auth:
+  mock-mode: ${AUTH_MOCK_MODE:true}
+
+server:
+  port: 8082
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  r2dbc:
+    url: r2dbc:h2:mem:///test?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    name: sa
+    password:
+  application:
+    name: session-service
+
+jwt:
+  secret: test-secret-key-for-testing-purposes-only-12345678
+  expiration: 3600000
+
+# Authentication Configuration
+auth:
+  mock-mode: true
+
+server:
+  port: 8082
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/nexosalud
+    username: postgres
+    password: postgres
+  application:
+    name: session-service
+  logging:
+    level:
+      org.springframework.data.r2dbc: Debug
+
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-here}
+  expiration: ${JWT_EXPIRATION:3600000}
+
+# Authentication Configuration
+auth:
+  mock-mode: ${AUTH_MOCK_MODE:false}
+
+server:
+  port: 8082
+
