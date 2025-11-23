@@ -31,7 +31,6 @@ public class GatewayController {
     private static final Logger logger = LoggerFactory.getLogger(GatewayController.class);
 
     public GatewayController(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl(TARGET_URL).build();
         this.webClients = new HashMap<>(); 
         webClients.put("/api/v1/users", webClientBuilder.baseUrl(urlUsers).build());
         webClients.put("/api/v1/employees", webClientBuilder.baseUrl(urlEmployees).build());
