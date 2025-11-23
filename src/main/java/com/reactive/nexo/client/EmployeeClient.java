@@ -27,24 +27,7 @@ public class EmployeeClient {
     public Mono<AuthResponse> authenticate(LoginRequest request) {
         log.info("EmployeeClient.authenticate - Attempting authentication for user: {}/{}", 
                 request.getIdentification_type(), request.getIdentification_number());
-
-        if (mockMode) {
-            log.info("EmployeeClient.authenticate - Mock mode enabled. Returning mock AuthResponse");
-            // Mock mode: always return success with test data
-            AuthResponse mockResponse = new AuthResponse(
-                    1,                                           // id
-                    request.getIdentification_number(),          // names (use identification as name)
-                    "Test User",                                 // lastnames
-                    request.getIdentification_type(),            // identification_type
-                    request.getIdentification_number(),          // identification_number
-                    1,                                           // rol_id
-                    "ADMIN",                                     // rol_nombre
-                    Arrays.asList("read", "write", "delete")     // permisos
-            );
-            return Mono.just(mockResponse);
-        }
-
-        // Real mode: call remote employees service
+        
         return client.post()
                 .uri("/api/v1/employees/authenticate")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -1,5 +1,6 @@
 package com.reactive.nexo.service;
 
+import org.springframework.web.server.ServerWebExchange;
 import com.reactive.nexo.client.EmployeeClient;
 import com.reactive.nexo.dto.LoginRequest;
 import com.reactive.nexo.dto.LoginResponse;
@@ -8,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import java.net.InetSocketAddress;
 
 @Service
 @Slf4j
@@ -22,7 +26,8 @@ public class SessionService {
     /**
      * Authenticate user by calling EmployeeClient to validate credentials and get roles/permisos
      */
-    public Mono<LoginResponse> login(LoginRequest request) {
+    @SuppressWarnings("unchecked")           
+    public Mono<LoginResponse> login(LoginRequest request, ServerWebExchange exchange) {
         log.info("SessionService.login - Attempting login for user with identification: {}/{}", 
                 request.getIdentification_type(), request.getIdentification_number());
 
@@ -30,11 +35,17 @@ public class SessionService {
         return employeeClient.authenticate(request)
                 .flatMap(authResponse -> {
                     // Generate JWT token with user info and permissions
+
+                    String employeeId = exchange.getRequest().getHeaders().getFirst("x-employee-id");
+                    String userAgent = exchange.getRequest().getHeaders().getFirst(HttpHeaders.USER_AGENT);                    
+                    String ipAddress =  (exchange.getRequest().getRemoteAddress() != null) ? 
+                          exchange.getRequest().getRemoteAddress().getHostString() : "unknown";
+
                     String token = jwtUtil.generateToken(
                             authResponse.getId(),
-                            authResponse.getNames() + " " + authResponse.getLastnames(),
-                            authResponse.getRol_nombre(),
-                            authResponse.getPermisos()
+                            ipAddress,
+                            userAgent,
+                            authResponse.getPermissions()
                     );
 
                     LoginResponse response = new LoginResponse(

@@ -28,11 +28,4 @@ public class SessionClient {
                 .doOnSuccess(resp -> log.info("EmployeeClient.authenticate - Auth successful for user: {}", resp.getId()))
                 .doOnError(err -> log.error("EmployeeClient.authenticate - Auth failed: {}", err.getMessage()));
     }
-    
-    public Mono<Session> getTest(){
-       return client.get()
-                .uri("/test")
-                .retrieve()
-                .bodyToMono(Session.class).log(" Employee fetched ");
-    }
 }

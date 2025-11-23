@@ -29,17 +29,16 @@ public class JwtUtil {
     }
 
     /**
-     * Generate a JWT token with user claims (id, username, roles, permisos)
+     * Generate a JWT token with user claims (id, username, roles, permissions)
      */
-    public String generateToken(Integer userId, String username, String rolNombre, List<String> permisos) {
+    public String generateToken(String employeeId, String ipAddress, String userAgent, List<Map<String, List<String>>> permissions) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("user_id", userId);
-        claims.put("username", username);
-        if (rolNombre != null) {
-            claims.put("rol", rolNombre);
-        }
-        if (permisos != null && !permisos.isEmpty()) {
-            claims.put("permisos", permisos);
+        claims.put("employee_id", employeeId);
+        claims.put("ip_address", ipAddress);
+        claims.put("user_agent", userAgent);
+        
+        if (permissions != null && !permissions.isEmpty()) {
+            claims.put("permissions", permissions);
         }
 
         return Jwts.builder()
@@ -108,10 +107,10 @@ public class JwtUtil {
      * Extract roles/permissions from token
      */
     @SuppressWarnings("unchecked")
-    public List<String> extractPermisos(String token) {
+    public List<Map<String, List<String>>> extractPermisos(String token) {
         Claims claims = extractClaims(token);
         if (claims == null) return null;
-        return (List<String>) claims.get("permisos");
+        return (List<Map<String, List<String>>>) claims.get("permissions");
     }
 
     /**
