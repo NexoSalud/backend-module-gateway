@@ -41,6 +41,15 @@ public class SessionService {
                     String ipAddress =  (exchange.getRequest().getRemoteAddress() != null) ? 
                           exchange.getRequest().getRemoteAddress().getHostString() : "unknown";
 
+                    /*if (request.getTwo_factor_code() == null || request.getTwo_factor_code().isEmpty()) {
+                        return Mono.just(new TwoFactorRequiredResponse());
+                    } 
+                
+                    // *** Validación real del código 2FA usando el secreto del usuario ***
+                    if (!TwoFactorUtil.validateCode(employee.getTwoFactorSecret(), request.getTwo_factor_code())) {
+                        return Mono.error(new BadCredentialsException("Invalid 2FA code"));
+                    }*/
+
                     String token = jwtUtil.generateToken(
                             authResponse.getId(),
                             ipAddress,

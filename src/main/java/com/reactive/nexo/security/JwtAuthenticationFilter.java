@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter implements WebFilter {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().toString();
 
-        if (path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/logout")) {
+        if (path.startsWith("/api/v1/auth")) {
             return chain.filter(exchange);
         }
         
