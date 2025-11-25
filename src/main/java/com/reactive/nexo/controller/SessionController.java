@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.io.ByteArrayOutputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -31,6 +34,7 @@ public class SessionController {
 
     @Autowired
     private SessionService sessionService;
+    private static final Logger logger = LoggerFactory.getLogger(SessionController.class);
 
     /**
      * POST /api/v1/auth/login - Login endpoint
@@ -52,23 +56,27 @@ public class SessionController {
 
     // Asume que tienes acceso al ID/email del usuario autenticado actual
     // En un entorno real, obtendrías esto del contexto de seguridad (e.g., Spring Security Context)
-    private final String CURRENT_USER_EMAIL = "user@example.com";
     private final String APP_ISSUER = "NexoReactiveApp";
+    
 
     /**
      * Endpoint para generar y devolver la imagen del código QR para la configuración 2FA.
      */
-    @GetMapping(value = "/2fa/generate-qr", produces = MediaType.IMAGE_PNG_VALUE)
-    public Mono<ResponseEntity<byte[]>> generateQrCode() {
+    @GetMapping(value = "/2fa/generate-qr/{identificationType}/{identificationNumber}", produces = MediaType.IMAGE_PNG_VALUE)
+    public Mono<ResponseEntity<byte[]>> generateQrCode(@PathVariable String identificationType, @PathVariable String identificationNumber,ServerWebExchange exchange) {
         
         // 1. Generar un nuevo secreto para el usuario
         String newSecret = TwoFactorUtil.generateNewSecret();
+        logger.info("SessionController.generateQrCode - Generated new 2FA secret for user: {}/{} {}", identificationType, identificationNumber,newSecret);
         
         // 2. Guardar este secreto en la base de datos para el usuario actual (MUY IMPORTANTE)
-        // userService.saveTwoFactorSecret(CURRENT_USER_EMAIL, newSecret);
+        if(!sessionService.saveTwoFactorSecret(exchange,identificationType, identificationNumber, newSecret).block()) {
+            logger.error("SessionController.generateQrCode - Failed to save 2FA secret for user: {}/{}", identificationType, identificationNumber);
+            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null));
+        }
 
         // 3. Generar la URL del QR
-        String qrUrl = TwoFactorUtil.getQRUrl(CURRENT_USER_EMAIL, newSecret, APP_ISSUER);
+        String qrUrl = TwoFactorUtil.getQRUrl(identificationType+"@"+identificationNumber, newSecret, APP_ISSUER);
 
         return Mono.fromCallable(() -> {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();

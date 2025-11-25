@@ -12,10 +12,19 @@ import reactor.core.publisher.Mono;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import java.net.InetSocketAddress;
+import com.reactive.nexo.dto.AuthResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import com.reactive.nexo.util.TwoFactorUtil;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Slf4j
 public class SessionService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
 
     @Autowired
     private EmployeeClient employeeClient;
@@ -36,19 +45,33 @@ public class SessionService {
                 .flatMap(authResponse -> {
                     // Generate JWT token with user info and permissions
 
-                    String employeeId = exchange.getRequest().getHeaders().getFirst("x-employee-id");
+                    String employeeId = authResponse.getId().toString();
                     String userAgent = exchange.getRequest().getHeaders().getFirst(HttpHeaders.USER_AGENT);                    
                     String ipAddress =  (exchange.getRequest().getRemoteAddress() != null) ? 
                           exchange.getRequest().getRemoteAddress().getHostString() : "unknown";
-
-                    /*if (request.getTwo_factor_code() == null || request.getTwo_factor_code().isEmpty()) {
-                        return Mono.just(new TwoFactorRequiredResponse());
+                
+                    logger.info("SessionService.readTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}",request.getTwoFA(), employeeId);
+       
+                    if (request.getTwoFA() == null || request.getTwoFA().isEmpty()) {
+                        logger.info("SessionService.saveTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}",request.getTwoFA(), employeeId);
+                        return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is required"));
+                       // return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null));        
                     } 
                 
                     // *** Validación real del código 2FA usando el secreto del usuario ***
-                    if (!TwoFactorUtil.validateCode(employee.getTwoFactorSecret(), request.getTwo_factor_code())) {
-                        return Mono.error(new BadCredentialsException("Invalid 2FA code"));
-                    }*/
+                    logger.info("SessionService.saveTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}",request.getTwoFA(), authResponse.getSecret());
+                    if(authResponse.getSecret() != null) {
+                        if (!TwoFactorUtil.validateCode(authResponse.getSecret(), request.getTwoFA())) {
+                            //return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null));        
+                            logger.info("SessionService.saveTwoFactorSecret - No 2FA secret is INVALID");
+                            //return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is required"));
+                        } else {
+                            logger.info("SessionService.saveTwoFactorSecret - No 2FA secret VALID");      
+                        }
+                    }else {
+                        logger.info("SessionService.saveTwoFactorSecret - No 2FA secret UNSETED");                        
+                        //return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is unseted"));       
+                    }
 
                     String token = jwtUtil.generateToken(
                             authResponse.getId(),
@@ -61,11 +84,31 @@ public class SessionService {
                             token,
                             authResponse.getNames() + " " + authResponse.getLastnames(),
                             authResponse.getId(),
-                            authResponse.getRol_nombre()
+                            authResponse.getRol_name()
                     );
 
                     log.info("SessionService.login - Login successful for user id: {}", authResponse.getId());
                     return Mono.just(response);
                 });
+    }
+
+    public Mono<Boolean> saveTwoFactorSecret(ServerWebExchange exchange, String identificationType, String identificationNumber, String newSecret) {
+        logger.info("SessionService.saveTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}", identificationType, identificationNumber);
+        
+        return employeeClient.getEmployee(identificationType, identificationNumber)
+            .flatMap(response -> {
+                logger.info("SessionService.saveTwoFactorSecret - Fetched employee ID from response: {}", response.getId());
+
+                String employeeId = exchange.getRequest().getHeaders().getFirst("x-employee-id");
+                logger.info("SessionService.saveTwoFactorSecret - Fetched employee: {}", employeeId);
+                if(response != null && response.getId().equals(employeeId)) {
+                    return employeeClient.updateTwoFactorSecret(employeeId, newSecret);
+                }
+                return Mono.just(true); 
+            })
+            .doOnError(err -> {
+                logger.error("SessionService.saveTwoFactorSecret - Error in client call: {}", err.getMessage());
+            })
+            .onErrorReturn(false); 
     }
 }

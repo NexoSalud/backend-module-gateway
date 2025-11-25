@@ -16,9 +16,6 @@ import java.util.Arrays;
 public class EmployeeClient {
     private WebClient client = WebClient.create("http://localhost:8081");
 
-    @Value("${auth.mock-mode:false}")
-    private boolean mockMode;
-
     /**
      * Call the employees module to authenticate a user
      * POST /api/v1/employees/authenticate
@@ -43,4 +40,24 @@ public class EmployeeClient {
                     }
                 });
     }
+    public Mono<AuthResponse> getEmployee(String identificationType, String identificationNumber) {
+        return client.get()
+                .uri("/api/v1/employees/by-identification/{identificationType}/{identificationNumber}", identificationType, identificationNumber)
+                .retrieve()
+                .bodyToMono(AuthResponse.class)
+                .doOnSuccess(resp -> log.info("EmployeeClient.getEmployee - Retrieved employee with id: XXX#{}", resp.getId()))
+                .doOnError(err -> log.error("EmployeeClient.getEmployee - Failed to update 2FA secret for employeeIdentification: {}: {}", identificationNumber, err.getMessage()));
+    }   
+    public Mono<Boolean> updateTwoFactorSecret(String employeeId, String newSecret) {
+        return client.patch()
+                .uri("/api/v1/employees/{id}", employeeId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{ \"secret\": \"" + newSecret + "\" }")
+                .retrieve()
+                .bodyToMono(Void.class)
+                .doOnSuccess(v -> log.info("EmployeeClient.updateTwoFactorSecret - 2FA secret updated for employeeId: {}", employeeId))
+                .doOnError(err -> log.error("EmployeeClient.updateTwoFactorSecret - Failed to update 2FA secret for employeeId: {}: {}", employeeId, err.getMessage()))
+                .thenReturn(true)
+                .onErrorReturn(false);
+    }   
 }

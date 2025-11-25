@@ -19,7 +19,10 @@ public class PermissionChecker {
     public boolean hasPermission(String requestMethod, String requestPath,List<Map<String, Object>> permissions) {
         String normalizedPath = requestPath.startsWith("/") ? requestPath : "/" + requestPath;
         normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
-
+        
+        if(normalizedPath.startsWith("/api/v1/2fa/")){
+            return true;
+        }
         if (permissions != null && !permissions.isEmpty()) {
             logger.info("Iniciando impresión detallada de permisos ({} elementos):", permissions.size());
             

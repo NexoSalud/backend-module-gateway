@@ -11,4 +11,5 @@ public class LoginRequest {
     private String identification_type;
     private String identification_number;
     private String password;
+    private String twoFA;
 }

@@ -17,6 +17,7 @@ public class AuthResponse {
     private String identification_type;
     private String identification_number;
     private Integer rol_id;
-    private String rol_nombre;
+    private String rol_name;
+    private String secret;
     private List<Map<String, List<String>>> permissions;
 }
