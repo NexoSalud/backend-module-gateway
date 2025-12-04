@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.reactive.nexo.util.TwoFactorUtil;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -49,7 +50,8 @@ public class SessionService {
                     String userAgent = exchange.getRequest().getHeaders().getFirst(HttpHeaders.USER_AGENT);                    
                     String ipAddress =  (exchange.getRequest().getRemoteAddress() != null) ? 
                           exchange.getRequest().getRemoteAddress().getHostString() : "unknown";
-                
+                    
+                    String redirectUrl = null;                
                     logger.info("SessionService.readTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}",request.getTwoFA(), employeeId);
        
                     if (request.getTwoFA() == null || request.getTwoFA().isEmpty()) {
@@ -68,9 +70,12 @@ public class SessionService {
                         } else {
                             logger.info("SessionService.saveTwoFactorSecret - No 2FA secret VALID");      
                         }
-                    }else {
+                    } else {
                         logger.info("SessionService.saveTwoFactorSecret - No 2FA secret UNSETED");                        
-                        //return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is unseted"));       
+                        redirectUrl = String.format("/api/v1/2fa/generate-qr/%s/%s", 
+                            request.getIdentification_type(), request.getIdentification_number());
+                            exchange.getResponse().setStatusCode(HttpStatus.OK);
+                        authResponse.setPermissions(null); 
                     }
 
                     String token = jwtUtil.generateToken(
@@ -87,6 +92,27 @@ public class SessionService {
                             authResponse.getRol_name()
                     );
 
+                    if(redirectUrl != null) {
+                        Map<String, Object> responseBody = Map.of(
+                            "redirect_url", redirectUrl,
+                            "token", token,
+                            "employeeId", authResponse.getId().toString()
+                        );
+                        // Complete the response so headers are sent
+                        return Mono.just(responseBody)
+                            .flatMap(body -> {
+                                exchange.getResponse().getHeaders().setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+                                try {
+                                    byte[] bytes = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsBytes(body);
+                                    return exchange.getResponse().writeWith(Mono.just(exchange.getResponse()
+                                        .bufferFactory().wrap(bytes)));
+                                } catch (Exception e) {
+                                    logger.error("SessionService.login - Error writing redirect response: {}", e.getMessage());
+                                    return exchange.getResponse().setComplete();
+                                }
+                            })
+                            .then(Mono.empty());
+                    }
                     log.info("SessionService.login - Login successful for user id: {}", authResponse.getId());
                     return Mono.just(response);
                 });
