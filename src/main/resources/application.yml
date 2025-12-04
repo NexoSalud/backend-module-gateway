@@ -1,12 +1,35 @@
 spring:
   r2dbc:
-    url: r2dbc:h2:mem:///devdb?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password:
+    url: r2dbc:postgresql://localhost:5432/nexosalud
+    username: postgres
+    password: postgres
   application:
     name: gateway-service
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
   webflux:
     base-path: /api/v1
+    cors:
+      allowed-origins:
+        - "http://localhost:*"
+        - "https://localhost:*"
+        - "http://local.nexosalud:*"
+        - "https://local.nexosalud:*"
+        - "http://127.0.0.1:*"
+        - "https://127.0.0.1:*"
+      allowed-methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        - OPTIONS
+      allowed-headers:
+        - "*"
+      allow-credentials: true
+      max-age: 3600
 logging:
   level:
     org.springframework.data.r2dbc: Debug
@@ -29,9 +52,9 @@ spring:
     activate:
       on-profile: test
   r2dbc:
-    url: r2dbc:h2:mem:///test?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    name: sa
-    password:
+    url: r2dbc:postgresql://localhost:5432/nexosalud
+    username: postgres
+    password: postgres
   application:
     name: gateway-service
 
