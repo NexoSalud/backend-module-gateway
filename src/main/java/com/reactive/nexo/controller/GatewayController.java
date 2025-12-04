@@ -25,10 +25,10 @@ public class GatewayController {
 
     // Inyectar las URLs desde application.properties
     //@Value("${service.users.url}")
-    private String urlUsers = "http://localhost:8082";
+    private String urlUsers = "http://localhost:8081";
 
     //@Value("${service.employees.url}")
-    private String urlEmployees = "http://localhost:8081";
+    private String urlEmployees = "http://localhost:8082";
 
     //@Value("${service.schedule.url}")
     private String urlSchedule = "http://localhost:8083";
