@@ -23,15 +23,15 @@ public class GatewayController {
     //@Value("${service.users.url}")
     private final String error = "Gateway Error: Unknown service for path ";
 
-    // Inyectar las URLs desde application.properties
+    // URLs de servicios internos (usando nombres de contenedor Docker)
     //@Value("${service.users.url}")
-    private String urlUsers = "http://localhost:8081";
+    private String urlUsers = System.getenv().getOrDefault("USERS_SERVICE_URL", "http://localhost:8081");
 
     //@Value("${service.employees.url}")
-    private String urlEmployees = "http://localhost:8082";
+    private String urlEmployees = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8082");
 
     //@Value("${service.schedule.url}")
-    private String urlSchedule = "http://localhost:8083";
+    private String urlSchedule = System.getenv().getOrDefault("SCHEDULE_SERVICE_URL", "http://localhost:8083");
 
     private final Map<String, WebClient>  webClients;
 
