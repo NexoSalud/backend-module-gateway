@@ -60,6 +60,13 @@ public class GatewayController {
         return webClients.get(result);
     }
 
+    private String buildCompleteUri(String path, String queryString) {
+        if (queryString != null && !queryString.isEmpty()) {
+            return path + "?" + queryString;
+        }
+        return path;
+    }
+
     /**
      * Forwards any POST request arriving at the root path "/" 
      * to the target service at http://localhost:8081/
@@ -68,12 +75,15 @@ public class GatewayController {
     public Mono<ResponseEntity<String>> forwardPostRequests(ServerWebExchange exchange) {
    
         String path = exchange.getRequest().getPath().toString();
+        String queryString = exchange.getRequest().getQueryParams().toString();
+        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
         return webClient.post()
-            .uri(path) // Use the dynamic path from the original request
+            .uri(completeUri) // Use the complete URI with query parameters
             .body(exchange.getRequest().getBody(), String.class) // Forward the body
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> {
@@ -85,12 +95,14 @@ public class GatewayController {
     @GetMapping("/**")
     public Mono<ResponseEntity<String>> forwardGetRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
+        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
         return webClient.get()
-            .uri(path)
+            .uri(completeUri)
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
     }
@@ -98,12 +110,14 @@ public class GatewayController {
     @PutMapping("/**")
     public Mono<ResponseEntity<String>> forwardPutRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
+        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
         return webClient.put()
-            .uri(path)
+            .uri(completeUri)
             .body(BodyInserters.fromProducer(exchange.getRequest().getBody(), String.class)) // Forward body
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
@@ -112,12 +126,14 @@ public class GatewayController {
     @PatchMapping("/**")
     public Mono<ResponseEntity<String>> forwardPatchRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
+        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
         return webClient.patch()
-            .uri(path)
+            .uri(completeUri)
             .body(BodyInserters.fromProducer(exchange.getRequest().getBody(), String.class)) // Forward body
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
@@ -126,12 +142,14 @@ public class GatewayController {
     @DeleteMapping("/**")
     public Mono<ResponseEntity<String>> forwardDeleteRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
+        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
         return webClient.delete()
-            .uri(path)
+            .uri(completeUri)
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
     }
