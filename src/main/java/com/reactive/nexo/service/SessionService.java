@@ -56,17 +56,16 @@ public class SessionService {
        
                     if (request.getTwoFA() == null || request.getTwoFA().isEmpty()) {
                         logger.info("SessionService.saveTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}",request.getTwoFA(), employeeId);
-                        return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is required"));
+                       // return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is required"));
                        // return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null));        
                     } 
                 
                     // *** Validación real del código 2FA usando el secreto del usuario ***
                     logger.info("SessionService.saveTwoFactorSecret - Fetching employee to update 2FA secret for user: {}/{}",request.getTwoFA(), authResponse.getSecret());
                     if(authResponse.getSecret() != null) {
-                        if (!TwoFactorUtil.validateCode(authResponse.getSecret(), request.getTwoFA())) {
-                            //return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null));        
+                        if (!TwoFactorUtil.validateCode(authResponse.getSecret(), request.getTwoFA())) {    
                             logger.info("SessionService.saveTwoFactorSecret - No 2FA secret is INVALID");
-                            //return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is required"));
+                            return Mono.<LoginResponse>error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "2FA code is required"));
                         } else {
                             logger.info("SessionService.saveTwoFactorSecret - No 2FA secret VALID");      
                         }
