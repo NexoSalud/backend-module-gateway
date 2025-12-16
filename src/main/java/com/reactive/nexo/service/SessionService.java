@@ -88,7 +88,8 @@ public class SessionService {
                             token,
                             authResponse.getNames() + " " + authResponse.getLastnames(),
                             authResponse.getId(),
-                            authResponse.getRol_name()
+                            authResponse.getRol_name(),
+                            authResponse.getPermissions()
                     );
 
                     if(redirectUrl != null) {
