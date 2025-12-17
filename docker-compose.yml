@@ -8,7 +8,7 @@ services:
     container_name: nexo-gateway
     restart: always
     ports:
-      - "80:8080"  # Exponemos el puerto 80 del servidor al 8080 del contenedor
+      - "8100:8080"  # Exponemos el puerto 80 del servidor al 8080 del contenedor
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SERVER_PORT=8080
