@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  gateway-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexo-gateway
+    restart: always
+    ports:
+      - "8100:8080"  # Exponemos el puerto 80 del servidor al 8080 del contenedor
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8080
+      # Forzamos la sobrescritura aquí mismo
+      - SPRING_R2DBC_URL=r2dbc:postgresql://nexo-postgres:5432/nexosalud
+      - SPRING_R2DBC_USERNAME=postgres
+      - SPRING_R2DBC_PASSWORD=postgres
+    networks:
+      - nexo-network
+      - proxy_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Tienes mucha RAM, 2GB para el Gateway es muy seguro
+
+networks:
+  nexo-network:
+    external: true # Usará la red que ya creaste manualmente
+  proxy_network:
+    external: true
