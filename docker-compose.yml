@@ -15,13 +15,10 @@ services:
       # Aquí irán las rutas hacia los otros servicios cuando los subamos
     networks:
       - nexo-network
-
-    depends_on:
-      - nexo-database
     deploy:
       resources:
         limits:
-          memory: 2G # Tienes mucha RAM, 2GB para el Gateway es muy seguro
+          memory: 1G # Tienes mucha RAM, 2GB para el Gateway es muy seguro
 
 networks:
   nexo-network:
