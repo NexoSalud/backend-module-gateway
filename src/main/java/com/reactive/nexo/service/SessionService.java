@@ -71,10 +71,10 @@ public class SessionService {
                         }
                     } else {
                         logger.info("SessionService.saveTwoFactorSecret - No 2FA secret UNSETED");                        
-                        redirectUrl = String.format("/api/v1/2fa/generate-qr/%s/%s", 
+                        /*redirectUrl = String.format("/api/v1/2fa/generate-qr/%s/%s", 
                             request.getIdentification_type(), request.getIdentification_number());
                             exchange.getResponse().setStatusCode(HttpStatus.OK);
-                        authResponse.setPermissions(null); 
+                        authResponse.setPermissions(null);*/
                     }
 
                     String token = jwtUtil.generateToken(

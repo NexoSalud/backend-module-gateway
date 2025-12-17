@@ -28,20 +28,26 @@ public class GatewayController {
     private String urlUsers = System.getenv().getOrDefault("USERS_SERVICE_URL", "http://localhost:8081");
 
     //@Value("${service.employees.url}")
-    private String urlEmployees = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8082");
+    private String urlEmployees = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8081");
 
     //@Value("${service.schedule.url}")
-    private String urlSchedule = System.getenv().getOrDefault("SCHEDULE_SERVICE_URL", "http://localhost:8083");
+    private String urlSchedule = System.getenv().getOrDefault("SCHEDULE_SERVICE_URL", "http://localhost:8081");
 
     private final Map<String, WebClient>  webClients;
 
     private static final Logger logger = LoggerFactory.getLogger(GatewayController.class);
 
     public GatewayController(WebClient.Builder webClientBuilder) {
-        this.webClients = new HashMap<>(); 
-        webClients.put("/api/v1/users", webClientBuilder.baseUrl(urlUsers).build());
-        webClients.put("/api/v1/employees", webClientBuilder.baseUrl(urlEmployees).build());
-        webClients.put("/api/v1/schedule", webClientBuilder.baseUrl(urlSchedule).build());
+        this.webClients = new HashMap<>();
+        
+        // Log de las URLs para depuración
+        logger.info("URL Users: {}", urlUsers);
+        logger.info("URL Employees: {}", urlEmployees);
+        logger.info("URL Schedule: {}", urlSchedule);
+        
+        webClients.put("/api/v1/users", WebClient.create(urlUsers));
+        webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
+        webClients.put("/api/v1/schedule", WebClient.create(urlSchedule));
      
     }
     private WebClient getWebClient(String path){
@@ -98,6 +104,7 @@ public class GatewayController {
         String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
+        logger.info("Este es un mensaje de información: "+ webClient);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
