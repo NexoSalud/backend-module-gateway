@@ -12,9 +12,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SERVER_PORT=8080
-      # Aquí irán las rutas hacia los otros servicios cuando los subamos
+      # Forzamos la sobrescritura aquí mismo
+      - SPRING_R2DBC_URL=r2dbc:postgresql://nexo-postgres:5432/nexosalud
+      - SPRING_R2DBC_USERNAME=postgres
+      - SPRING_R2DBC_PASSWORD=postgres
     networks:
       - nexo-network
+      - proxy_network
     deploy:
       resources:
         limits:
