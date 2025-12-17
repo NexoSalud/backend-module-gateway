@@ -104,7 +104,7 @@ public class GatewayController {
         String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
-        logger.info("Este es un mensaje de información: "+ webClient);
+        //logger.info("Este es un mensaje de información: "+ webClient);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
