@@ -15,7 +15,9 @@ services:
       # Aquí irán las rutas hacia los otros servicios cuando los subamos
     networks:
       - nexo-network
-      - proxy_network
+
+    depends_on:
+      - nexo-database
     deploy:
       resources:
         limits:
@@ -25,3 +27,4 @@ networks:
   nexo-network:
     external: true # Usará la red que ya creaste manualmente
   proxy_network:
+    external: true
