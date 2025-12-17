@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  gateway-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexo-gateway
+    restart: always
+    ports:
+      - "80:8080"  # Exponemos el puerto 80 del servidor al 8080 del contenedor
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8080
+      # Aquí irán las rutas hacia los otros servicios cuando los subamos
+    networks:
+      - nexo-network
+      - proxy_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G # Tienes mucha RAM, 2GB para el Gateway es muy seguro
+
+networks:
+  nexo-network:
+    external: true # Usará la red que ya creaste manualmente
+  proxy_network:

@@ -1,23 +1,21 @@
-# Dockerfile for Spring Boot microservices
-FROM eclipse-temurin:17-jdk-jammy
-
-# Install Maven
-RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
-
+# Etapa 1: Construcción (Build)
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
 WORKDIR /app
 
-# Copy pom.xml and resolve dependencies (for better layer caching)
+# Aprovechar el cache de capas para dependencias
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Copy source code
+# Compilar el JAR
 COPY src ./src
-
-# Build the application
 RUN mvn clean package -DskipTests
 
-# Expose port (will be overridden by docker-compose)
-EXPOSE 8080
+# Etapa 2: Ejecución (Runtime)
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "target/reactive-nexo-0.0.1-SNAPSHOT.jar"]
+# Copiamos solo el JAR resultante de la etapa anterior
+COPY --from=build /app/target/*.jar app.jar
+
+# Configuración para optimizar Java en contenedores (usa tu RAM eficientemente)
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
