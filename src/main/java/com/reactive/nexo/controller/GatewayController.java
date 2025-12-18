@@ -25,13 +25,13 @@ public class GatewayController {
 
     // URLs de servicios internos (usando nombres de contenedor Docker)
     //@Value("${service.users.url}")
-    private String urlUsers = System.getenv().getOrDefault("USERS_SERVICE_URL", "http://localhost:8081");
+    private String urlUsers = System.getenv().getOrDefault("USERS_SERVICE_URL", "http://localhost:8082");
 
     //@Value("${service.employees.url}")
     private String urlEmployees = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8081");
 
     //@Value("${service.schedule.url}")
-    private String urlSchedule = System.getenv().getOrDefault("SCHEDULE_SERVICE_URL", "http://localhost:8081");
+    private String urlSchedule = System.getenv().getOrDefault("SCHEDULE_SERVICE_URL", "http://localhost:8083");
 
     private final Map<String, WebClient>  webClients;
 
@@ -48,6 +48,7 @@ public class GatewayController {
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
         webClients.put("/api/v1/schedule", WebClient.create(urlSchedule));
+        webClients.put("/api/v1/rols", webClients.get("/api/v1/employees"));
      
     }
     private WebClient getWebClient(String path){
@@ -105,6 +106,12 @@ public class GatewayController {
         
         WebClient webClient = this.getWebClient(path);
         //logger.info("Este es un mensaje de información: "+ webClient);
+
+        webClient.mutate().filter((request, next) -> {
+            logger.info("La URL base configurada es: " + request.url());
+            return next.exchange(request);
+        }).build();
+        
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
