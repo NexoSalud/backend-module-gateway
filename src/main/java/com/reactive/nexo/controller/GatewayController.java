@@ -7,6 +7,10 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.http.MediaType;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import java.nio.charset.StandardCharsets;
 import com.reactive.nexo.security.PermissionChecker;
 import java.util.HashMap;
 import java.util.Arrays;
@@ -82,21 +86,36 @@ public class GatewayController {
     public Mono<ResponseEntity<String>> forwardPostRequests(ServerWebExchange exchange) {
    
         String path = exchange.getRequest().getPath().toString();
-        String queryString = exchange.getRequest().getQueryParams().toString();
         String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
-        return webClient.post()
-            .uri(completeUri) // Use the complete URI with query parameters
-            .body(exchange.getRequest().getBody(), String.class) // Forward the body
-            .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
-            .onErrorResume(e -> {
-                // Handle connection errors gracefully
-                return Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service"));
+        logger.info("GateWay -> Forwarding POST request to: " + completeUri);
+
+        Mono<String> bodyMono = DataBufferUtils.join(exchange.getRequest().getBody())
+            .map(dataBuffer -> {
+                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                dataBuffer.read(bytes);
+                DataBufferUtils.release(dataBuffer);
+                return new String(bytes, StandardCharsets.UTF_8);
             });
+
+        return bodyMono.flatMap(body -> {
+            logger.info("GateWay -> Body content: " + body);
+            return webClient.post()
+                .uri(completeUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
+                .onErrorResume(e -> {
+                    logger.error("Error forwarding POST request: ", e);
+                    return Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service"));
+                })
+                .doOnSuccess(v -> logger.info("Gateway POST forwarded successfully"))
+                .doOnError(err ->  logger.error("Error forwarding POST request: ", err));
+        });
     }
 
     @GetMapping("/**")
@@ -117,6 +136,7 @@ public class GatewayController {
         }
         return webClient.get()
             .uri(completeUri)
+            .headers(h -> h.addAll(exchange.getRequest().getHeaders())) // forward headers
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
     }
@@ -130,11 +150,27 @@ public class GatewayController {
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
-        return webClient.put()
-            .uri(completeUri)
-            .body(BodyInserters.fromProducer(exchange.getRequest().getBody(), String.class)) // Forward body
-            .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
-            .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
+        Mono<String> bodyMono = DataBufferUtils.join(exchange.getRequest().getBody())
+            .map(dataBuffer -> {
+                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                dataBuffer.read(bytes);
+                DataBufferUtils.release(dataBuffer);
+                return new String(bytes, StandardCharsets.UTF_8);
+            });
+
+        return bodyMono.flatMap(body -> {
+            logger.info("GateWay -> Body content (PUT): " + body);
+            return webClient.put()
+                .uri(completeUri)
+                .headers(h -> h.addAll(exchange.getRequest().getHeaders()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
+                .onErrorResume(e -> {
+                    logger.error("Error forwarding PUT request: ", e);
+                    return Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service"));
+                });
+        });
     }
 
     @PatchMapping("/**")
@@ -146,11 +182,27 @@ public class GatewayController {
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
-        return webClient.patch()
-            .uri(completeUri)
-            .body(BodyInserters.fromProducer(exchange.getRequest().getBody(), String.class)) // Forward body
-            .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
-            .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
+        Mono<String> bodyMono = DataBufferUtils.join(exchange.getRequest().getBody())
+            .map(dataBuffer -> {
+                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                dataBuffer.read(bytes);
+                DataBufferUtils.release(dataBuffer);
+                return new String(bytes, StandardCharsets.UTF_8);
+            });
+
+        return bodyMono.flatMap(body -> {
+            logger.info("GateWay -> Body content (PATCH): " + body);
+            return webClient.patch()
+                .uri(completeUri)
+                .headers(h -> h.addAll(exchange.getRequest().getHeaders()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
+                .onErrorResume(e -> {
+                    logger.error("Error forwarding PATCH request: ", e);
+                    return Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service"));
+                });
+        });
     }
 
     @DeleteMapping("/**")
@@ -164,6 +216,7 @@ public class GatewayController {
         }
         return webClient.delete()
             .uri(completeUri)
+            .headers(h -> h.addAll(exchange.getRequest().getHeaders())) // forward headers
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
     }

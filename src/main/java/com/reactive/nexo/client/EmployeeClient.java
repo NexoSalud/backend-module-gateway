@@ -25,10 +25,17 @@ public class EmployeeClient {
         log.info("EmployeeClient.authenticate - Attempting authentication for user: {}/{}", 
                 request.getIdentification_type(), request.getIdentification_number());
         
+        java.util.Map<String, String> payload = java.util.Map.of(
+            "identification_type", request.getIdentification_type(),
+            "identification_number", request.getIdentification_number(),
+            "password", request.getPassword()
+        );
+
         return client.post()
                 .uri("/api/v1/employees/authenticate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(request)
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(AuthResponse.class)
                 .doOnSuccess(resp -> log.info("EmployeeClient.authenticate - Auth successful for user id: {}", resp.getId()))
