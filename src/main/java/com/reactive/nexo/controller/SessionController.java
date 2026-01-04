@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import io.jsonwebtoken.Claims;
+import com.reactive.nexo.dto.ResetPasswordRequest;
+import com.reactive.nexo.dto.ResetPasswordResponse;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -75,6 +77,21 @@ public class SessionController {
         return Mono.just(ResponseEntity.ok().<Void>build());
     }
 
+   /**
+    * POST /api/v1/auth/reset-password - Reset password bootstrap
+    * Accepts identificationType and identificationNumber and echoes back the same.
+    */
+    @PostMapping("/reset-password")
+    public Mono<ResponseEntity<Boolean>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        log.info("SessionController.resetPassword - Request for user: {}/{}",
+                request.getIdentificationType(), request.getIdentificationNumber());
+
+        return sessionService
+                .resetPassword(request.getIdentificationType(), request.getIdentificationNumber())
+                .map(success -> ResponseEntity.ok(success))
+                .onErrorResume(err -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false)));
+    }
+
     /**
      * POST /api/v1/auth/change-password/{token} - Change password endpoint
      * Extracts employee_id from token and validates it against the request payload
@@ -98,17 +115,18 @@ public class SessionController {
             }
             
             // Extract employee_id from token
+            String employeeEmail = (String) claims.get("employee_email");
             String employeeId = (String) claims.get("employee_id");
-            if (employeeId == null) {
-                log.warn("SessionController.changePassword - No employee_id found in token");
+            if (employeeEmail == null) {
+                log.warn("SessionController.changePassword - No employee_email found in token");
                 return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("Token no contiene employee_id"));
+                        .body("Token no contiene employee_email"));
             }
             
             // Validate employee_id from token matches the one in request
-            if (!employeeId.equals(request.getEmployee_id())) {
+            if (!employeeEmail.equals(request.getEmployee_email())) {
                 log.warn("SessionController.changePassword - Employee ID mismatch. Token: {}, Request: {}", 
-                        employeeId, request.getEmployee_id());
+                        employeeEmail, request.getEmployee_email());
                 return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body("El employee_id del token no coincide con el de la solicitud"));
             }

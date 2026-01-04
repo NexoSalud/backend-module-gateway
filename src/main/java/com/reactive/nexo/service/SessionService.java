@@ -137,4 +137,9 @@ public class SessionService {
             })
             .onErrorReturn(false); 
     }
+
+    public Mono<Boolean> resetPassword(String identificationType, String identificationNumber) {
+        logger.info("SessionService.resetPassword - Resetting password for user: {}/{}", identificationType, identificationNumber);        
+        return employeeClient.resetPassword(identificationType, identificationNumber);
+    }
 }

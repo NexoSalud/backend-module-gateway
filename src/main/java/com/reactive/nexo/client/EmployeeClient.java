@@ -66,5 +66,15 @@ public class EmployeeClient {
                 .doOnError(err -> log.error("EmployeeClient.updateTwoFactorSecret - Failed to update 2FA secret for employeeId: {}: {}", employeeId, err.getMessage()))
                 .thenReturn(true)
                 .onErrorReturn(false);
+    }     
+    public Mono<Boolean> resetPassword(String identificationType, String identificationNumber) {
+        return client.get()
+                .uri("/api/v1/employees/reset-password/{identificationType}/{identificationNumber}", identificationType, identificationNumber)
+                .retrieve()
+                .bodyToMono(String.class)
+                .doOnSuccess(v -> log.info("EmployeeClient.resetPassword - Password reset for user: {}/{}", identificationType, identificationNumber))
+                .doOnError(err -> log.error("EmployeeClient.resetPassword - Failed to reset password for user: {}/{}: {}", identificationType, identificationNumber, err.getMessage()))
+                .thenReturn(true)
+                .onErrorReturn(false);
     }   
 }
