@@ -19,6 +19,7 @@ public class PermissionChecker {
     public boolean hasPermission(String requestMethod, String requestPath,List<Map<String, Object>> permissions) {
         String normalizedPath = requestPath.startsWith("/") ? requestPath : "/" + requestPath;
         normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
+        //normalizedPath = normalizedPath.contains("?") ? normalizedPath.substring(0, normalizedPath.indexOf("?")) : normalizedPath;
         
         if(normalizedPath.startsWith("/api/v1/2fa/")){
             return true;
@@ -31,9 +32,17 @@ public class PermissionChecker {
                 List<String> endpoints = (List<String>) permissionRule.get(requestMethod);
                 logger.info("Regla de permiso: {}", permissionRule.get(requestMethod));
                 if(endpoints !=  null){
-                    for (String allowedPattern : endpoints) {             
-                       allowedPattern = allowedPattern.endsWith("/") ?
-                             allowedPattern.substring(0, allowedPattern.length() - 1) : allowedPattern;      
+                      for (String allowedPattern : endpoints) {             
+                         allowedPattern = allowedPattern.endsWith("/") ?
+                             allowedPattern.substring(0, allowedPattern.length() - 1) : allowedPattern;  
+                         allowedPattern = allowedPattern.startsWith("/") ? allowedPattern : "/" + allowedPattern;
+                         // remove placeholders enclosed in {}
+                         allowedPattern = allowedPattern.replaceAll("\\{[^}]*\\}", "");
+                         // normalize multiple slashes and trailing slash
+                         allowedPattern = allowedPattern.replaceAll("/{2,}", "/");
+                         allowedPattern = allowedPattern.endsWith("/") && !"/".equals(allowedPattern)
+                             ? allowedPattern.substring(0, allowedPattern.length() - 1)
+                             : allowedPattern;
                        logger.info("Regla de permiso: {}", allowedPattern +":"+normalizedPath);
                        if(normalizedPath.startsWith(allowedPattern)){
                         return true;
