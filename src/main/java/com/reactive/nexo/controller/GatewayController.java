@@ -36,6 +36,7 @@ public class GatewayController {
 
     //@Value("${service.schedule.url}")
     private String urlSchedule = System.getenv().getOrDefault("SCHEDULE_SERVICE_URL", "http://localhost:8083");
+        private String urlAppointments = System.getenv().getOrDefault("APPOINTMENTS_SERVICE_URL", "http://localhost:8084");
 
     private final Map<String, WebClient>  webClients;
 
@@ -48,10 +49,12 @@ public class GatewayController {
         logger.info("URL Users: {}", urlUsers);
         logger.info("URL Employees: {}", urlEmployees);
         logger.info("URL Schedule: {}", urlSchedule);
+            logger.info("URL Appointments: {}", urlAppointments);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
         webClients.put("/api/v1/schedule", WebClient.create(urlSchedule));
+            webClients.put("/api/v1/appointments", WebClient.create(urlAppointments));
         webClients.put("/api/v1/rols", webClients.get("/api/v1/employees"));
      
     }
