@@ -36,7 +36,7 @@ public class RequestTrackingFilter implements WebFilter {
         HttpMethod method = request.getMethod();
 
         // Solo registrar POST, PATCH, PUT
-        boolean shouldTrack = method == HttpMethod.POST || method == HttpMethod.PATCH || method == HttpMethod.PUT;
+        boolean shouldTrack = method == HttpMethod.POST || method == HttpMethod.PATCH || method == HttpMethod.PUT || method == HttpMethod.DELETE;
         if (!shouldTrack) {
             return chain.filter(exchange);
         }
@@ -92,7 +92,7 @@ public class RequestTrackingFilter implements WebFilter {
                             org.springframework.http.HttpStatusCode status = response.getStatusCode();
                             String responseInfo = "status=" + (status != null ? status.value() : 200);
                             String payload = payloadRef.get();
-                            if (endpoint.contains("auth/login") ) {
+                            if (endpoint.contains("/auth/") ) {
                                 payload = "{***}"; // Enmascarar payload de login para no guardar credenciales
                             }
                             return trackingService
