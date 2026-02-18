@@ -37,7 +37,7 @@ public class TrackingService {
      * Registra una llamada a endpoint
      */
     public Mono<Tracking> logEndpointCall(Long employeeId, String endpoint, String payload, String response) {
-        String action = "endpoint called: " + endpoint;
+        String action = endpoint;
         return logAction(employeeId, action, payload, response);
     }
 
@@ -45,7 +45,7 @@ public class TrackingService {
      * Registra una acción de autenticación
      */
     public Mono<Tracking> logAuthAction(Long employeeId, String authAction, String details) {
-        String action = "auth: " + authAction;
+        String action = authAction;
         return logAction(employeeId, action, details, null);
     }
 
@@ -53,7 +53,7 @@ public class TrackingService {
      * Registra un error del sistema
      */
     public Mono<Tracking> logError(Long employeeId, String errorType, String errorDetails, String stackTrace) {
-        String action = "error: " + errorType;
+        String action = errorType;
         return logAction(employeeId, action, errorDetails, stackTrace);
     }
 }

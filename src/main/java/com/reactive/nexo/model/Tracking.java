@@ -38,7 +38,7 @@ public class Tracking {
     // Constructor para crear tracking sin ID (para inserts)
     public Tracking(Long employeeId, String action, String data, String result) {
         this.employeeId = employeeId;
-        this.action = action != null ? action : "endpoint called";
+        this.action = action != null ? action : "";
         this.data = data;
         this.result = result;
         this.createdAt = LocalDateTime.now();
