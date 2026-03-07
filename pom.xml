@@ -142,7 +142,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>9.22.3</version>
                 <configuration>
-                    <url>jdbc:postgresql://localhost:5432/webfluxdb</url>
+                    <url>jdbc:postgresql://localhost:5432/nexosalud</url>
                     <user>postgres</user>
                     <password>postgres</password>
                 </configuration>
