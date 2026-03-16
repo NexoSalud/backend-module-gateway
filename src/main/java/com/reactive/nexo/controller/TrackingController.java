@@ -2,6 +2,8 @@ package com.reactive.nexo.controller;
 
 import com.reactive.nexo.model.Tracking;
 import com.reactive.nexo.repository.TrackingRepository;
+import com.reactive.nexo.dto.PagedResponse;
+import com.reactive.nexo.dto.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,8 +42,8 @@ public class TrackingController {
         @ApiResponse(responseCode = "400", description = "Atributo no válido o formato de fecha incorrecto"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    @GetMapping("/by/{attribute}/{value}")
-    public Mono<ResponseEntity<Flux<Tracking>>> getTrackingBy(
+        @GetMapping("/by/{attribute}/{value}")
+        public Mono<ResponseEntity<PagedResponse<Tracking>>> getTrackingBy(
             @Parameter(description = "Atributo de la tabla (id, created_at, employee_id, action, data, result)", required = true)
             @PathVariable String attribute,
             
@@ -49,13 +51,31 @@ public class TrackingController {
             @PathVariable String value,
             
             @Parameter(description = "Tipo de relación (eq, lt, gt)", example = "eq")
-            @RequestParam(defaultValue = "eq") String relation) {
+            @RequestParam(defaultValue = "eq") String relation,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
 
         log.info("Consultando tracking por atributo: {}, valor: {}, relación: {}", attribute, value, relation);
 
         try {
-            Flux<Tracking> result = getTrackingFlux(attribute, value, relation);
-            return Mono.just(ResponseEntity.ok(result));
+            int safePage = Math.max(0, page);
+            int safeSize = Math.max(1, size);
+            int offset = safePage * safeSize;
+
+            Flux<Tracking> resultFlux = getTrackingFlux(attribute, value, relation);
+            Mono<Long> totalMono = resultFlux.count();
+            Mono<java.util.List<Tracking>> pageMono = resultFlux
+                    .skip(offset)
+                    .take(safeSize)
+                    .collectList();
+
+            return Mono.zip(pageMono, totalMono)
+                    .map(tuple -> {
+                        java.util.List<Tracking> content = tuple.getT1();
+                        long total = tuple.getT2();
+                        PagedResponse<Tracking> resp = new PagedResponse<>(content, safePage, safeSize, total);
+                        return ResponseEntity.ok(resp);
+                    });
         } catch (IllegalArgumentException e) {
             log.error("Error en parámetros: {}", e.getMessage());
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage()));
@@ -81,16 +101,58 @@ public class TrackingController {
     }
 
     @Operation(
+        summary = "Obtener últimos registros de tracking (paginado)",
+        description = "Devuelve los últimos registros de tracking ordenados por fecha de creación con paginación"
+    )
+    @GetMapping("/latest/paged")
+    public Mono<ResponseEntity<PagedResponse<Tracking>>> getLatestTrackingPaged(
+            @Parameter(description = "Página (0-based)", example = "0")
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página", example = "10")
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+
+        log.info("Obteniendo últimos registros de tracking paginados: page={}, size={}", page, size);
+
+        int safePage = Math.max(0, page);
+        int safeSize = Math.max(1, size);
+        int offset = safePage * safeSize;
+
+        Mono<Long> totalMono = trackingRepository.count();
+        Mono<java.util.List<Tracking>> contentMono = trackingRepository.findAllPaged(safeSize, offset).collectList();
+
+        return Mono.zip(contentMono, totalMono)
+                .map(tuple -> {
+                    java.util.List<Tracking> content = tuple.getT1();
+                    long total = tuple.getT2();
+                    PagedResponse<Tracking> resp = new PagedResponse<>(content, safePage, safeSize, total);
+                    return ResponseEntity.ok(resp);
+                });
+    }
+
+    @Operation(
         summary = "Obtener todos los registros de tracking",
         description = "Devuelve todos los registros de tracking ordenados por fecha de creación descendente"
     )
     @GetMapping
-    public Mono<ResponseEntity<Flux<Tracking>>> getAllTracking() {
-        log.info("Obteniendo todos los registros de tracking");
-        
-        Flux<Tracking> result = trackingRepository.findAll()
-                .sort((t1, t2) -> t2.getCreatedAt().compareTo(t1.getCreatedAt()));
-        return Mono.just(ResponseEntity.ok(result));
+    public Mono<ResponseEntity<PagedResponse<Tracking>>> getAllTracking(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        log.info("Obteniendo registros de tracking paginados: page={}, size={}", page, size);
+
+        int safePage = Math.max(0, page);
+        int safeSize = Math.max(1, size);
+        int offset = safePage * safeSize;
+
+        Mono<Long> totalMono = trackingRepository.count();
+        Mono<java.util.List<Tracking>> contentMono = trackingRepository.findAllPaged(safeSize, offset).collectList();
+
+        return Mono.zip(contentMono, totalMono)
+                .map(tuple -> {
+                    java.util.List<Tracking> content = tuple.getT1();
+                    long total = tuple.getT2();
+                    PagedResponse<Tracking> resp = new PagedResponse<>(content, safePage, safeSize, total);
+                    return ResponseEntity.ok(resp);
+                });
     }
 
     private Flux<Tracking> getTrackingFlux(String attribute, String value, String relation) {

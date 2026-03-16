@@ -5,6 +5,7 @@ import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
@@ -73,4 +74,8 @@ public interface TrackingRepository extends ReactiveCrudRepository<Tracking, Lon
     // Método adicional para obtener los últimos registros
     @Query("SELECT * FROM tracking ORDER BY created_at DESC LIMIT :limit")
     Flux<Tracking> findLatestTracking(@Param("limit") int limit);
+
+    // Paginación general
+    @Query("SELECT * FROM tracking ORDER BY created_at DESC LIMIT :size OFFSET :offset")
+    Flux<Tracking> findAllPaged(@Param("size") int size, @Param("offset") int offset);
 }
