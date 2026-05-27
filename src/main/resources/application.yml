@@ -1,8 +1,8 @@
 spring:
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/nexosalud
-    username: postgres
-    password: postgres
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/nexosalud}
+    username: ${SPRING_R2DBC_USERNAME:postgres}
+    password: ${SPRING_R2DBC_PASSWORD:postgres}
   application:
     name: gateway-service
   sql:
@@ -34,17 +34,15 @@ logging:
   level:
     org.springframework.data.r2dbc: Debug
 
-# JWT Configuration
 jwt:
   secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationAndValidation1234567890}
   expiration: ${JWT_EXPIRATION:3600000}
 
-# Authentication Configuration
 auth:
   mock-mode: ${AUTH_MOCK_MODE:true}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 ---
 spring:
@@ -62,7 +60,6 @@ jwt:
   secret: test-secret-key-for-testing-purposes-only-12345678
   expiration: 3600000
 
-# Authentication Configuration
 auth:
   mock-mode: true
 
@@ -75,9 +72,9 @@ spring:
     activate:
       on-profile: prod
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/nexosalud
-    username: postgres
-    password: postgres
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/nexosalud}
+    username: ${SPRING_R2DBC_USERNAME:postgres}
+    password: ${SPRING_R2DBC_PASSWORD:postgres}
   application:
     name: gateway-service
   logging:
@@ -85,13 +82,11 @@ spring:
       org.springframework.data.r2dbc: Debug
 
 jwt:
-  secret: ${JWT_SECRET:your-secret-key-here}
+  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationAndValidation1234567890}
   expiration: ${JWT_EXPIRATION:3600000}
 
-# Authentication Configuration
 auth:
   mock-mode: ${AUTH_MOCK_MODE:false}
 
 server:
-  port: 8080
-
+  port: ${SERVER_PORT:8080}
