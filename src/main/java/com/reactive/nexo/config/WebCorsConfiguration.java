@@ -7,6 +7,7 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class WebCorsConfiguration {
@@ -14,19 +15,22 @@ public class WebCorsConfiguration {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        
-        // Permitir orígenes específicos incluyendo tu ambiente local
-        corsConfig.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*",
-            "https://localhost:*",
-            "http://local.nexosalud:*",
-            "https://local.nexosalud:*",
-            "http://127.0.0.1:*",
-            "https://127.0.0.1:*"
-        ));
-        
-        // Permitir todos los headers necesarios
-        corsConfig.setAllowedHeaders(Arrays.asList(
+
+        // Lee orígenes permitidos desde variable de entorno CORS_ALLOWED_ORIGINS.
+        // Formato: lista separada por comas, ej: "https://app.nexosalud.com,http://localhost:3000"
+        // Si no está definida, permite todos los orígenes (*).
+        String allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS");
+
+        if (allowedOriginsEnv != null && !allowedOriginsEnv.isBlank()) {
+            List<String> origins = Arrays.asList(allowedOriginsEnv.split(","));
+            corsConfig.setAllowedOriginPatterns(origins);
+        } else {
+            // Sin restricción de origen — válido para desarrollo y cuando el
+            // frontend está en un dominio/IP desconocido en producción.
+            corsConfig.setAllowedOriginPatterns(List.of("*"));
+        }
+
+        corsConfig.setAllowedHeaders(List.of(
             "Authorization",
             "Content-Type",
             "Accept",
@@ -35,28 +39,30 @@ public class WebCorsConfiguration {
             "Access-Control-Request-Method",
             "Access-Control-Request-Headers"
         ));
-        
-        // Permitir todos los métodos HTTP
-        corsConfig.setAllowedMethods(Arrays.asList(
+
+        corsConfig.setAllowedMethods(List.of(
             "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
         ));
-        
-        // Permitir envío de credenciales (cookies, headers de autorización)
-        corsConfig.setAllowCredentials(true);
-        
-        // Exponer headers personalizados en la respuesta
-        corsConfig.setExposedHeaders(Arrays.asList(
+
+        // allowCredentials=true es incompatible con allowedOriginPatterns("*")
+        // Solo se activa si hay orígenes explícitos configurados.
+        if (allowedOriginsEnv != null && !allowedOriginsEnv.isBlank()) {
+            corsConfig.setAllowCredentials(true);
+        } else {
+            corsConfig.setAllowCredentials(false);
+        }
+
+        corsConfig.setExposedHeaders(List.of(
             "Authorization",
             "x-employee-id",
             "Location"
         ));
-        
-        // Configurar tiempo de cache para preflight requests
+
         corsConfig.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
-        
+
         return new CorsWebFilter(source);
     }
 }
