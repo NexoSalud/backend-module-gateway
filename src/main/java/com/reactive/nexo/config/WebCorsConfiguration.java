@@ -2,67 +2,66 @@ package com.reactive.nexo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsWebFilter;
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-import java.util.List;
-
+/**
+ * Filtro CORS global con la máxima prioridad.
+ *
+ * Inyecta los headers Access-Control-* en TODAS las respuestas que
+ * salen del gateway, incluyendo las que vienen de microservicios
+ * forwarded por GatewayController. Esto evita tener que configurar
+ * CORS en cada microservicio individualmente.
+ */
 @Configuration
 public class WebCorsConfiguration {
 
     @Bean
-    public CorsWebFilter corsWebFilter() {
-        CorsConfiguration corsConfig = new CorsConfiguration();
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public WebFilter corsFilter() {
+        return (ServerWebExchange exchange, WebFilterChain chain) -> {
+            ServerHttpRequest request = exchange.getRequest();
+            ServerHttpResponse response = exchange.getResponse();
+            HttpHeaders headers = response.getHeaders();
 
-        // Lee orígenes permitidos desde variable de entorno CORS_ALLOWED_ORIGINS.
-        // Formato: lista separada por comas, ej: "https://app.nexosalud.com,http://localhost:3000"
-        // Si no está definida, permite todos los orígenes (*).
-        String allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS");
+            // Origen permitido: el que viene en el request, o * si no hay
+            String origin = request.getHeaders().getFirst(HttpHeaders.ORIGIN);
+            if (origin != null && !origin.isBlank()) {
+                headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            } else {
+                headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+            }
 
-        if (allowedOriginsEnv != null && !allowedOriginsEnv.isBlank()) {
-            List<String> origins = Arrays.asList(allowedOriginsEnv.split(","));
-            corsConfig.setAllowedOriginPatterns(origins);
-        } else {
-            // Sin restricción de origen — válido para desarrollo y cuando el
-            // frontend está en un dominio/IP desconocido en producción.
-            corsConfig.setAllowedOriginPatterns(List.of("*"));
-        }
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+                    "GET, POST, PUT, DELETE, PATCH, OPTIONS");
 
-        corsConfig.setAllowedHeaders(List.of(
-            "Authorization",
-            "Content-Type",
-            "Accept",
-            "x-employee-id",
-            "X-Requested-With",
-            "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
-        ));
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                    "Authorization, Content-Type, Accept, x-employee-id, " +
+                    "X-Requested-With, Access-Control-Request-Method, " +
+                    "Access-Control-Request-Headers");
 
-        corsConfig.setAllowedMethods(List.of(
-            "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-        ));
+            headers.set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                    "Authorization, x-employee-id, Location");
 
-        // allowCredentials=true es incompatible con allowedOriginPatterns("*")
-        // Solo se activa si hay orígenes explícitos configurados.
-        if (allowedOriginsEnv != null && !allowedOriginsEnv.isBlank()) {
-            corsConfig.setAllowCredentials(true);
-        } else {
-            corsConfig.setAllowCredentials(false);
-        }
+            headers.set(HttpHeaders.ACCESS_CONTROL_MAX_AGE, "3600");
 
-        corsConfig.setExposedHeaders(List.of(
-            "Authorization",
-            "x-employee-id",
-            "Location"
-        ));
+            // Responder inmediatamente a preflight OPTIONS sin pasar al controller
+            if (HttpMethod.OPTIONS.equals(request.getMethod())) {
+                response.setStatusCode(HttpStatus.OK);
+                return response.setComplete();
+            }
 
-        corsConfig.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfig);
-
-        return new CorsWebFilter(source);
+            return chain.filter(exchange);
+        };
     }
 }
