@@ -45,10 +45,7 @@ public class WebCorsConfiguration {
             headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
                     "GET, POST, PUT, DELETE, PATCH, OPTIONS");
 
-            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
-                    "Authorization, Content-Type, Accept, x-employee-id, " +
-                    "X-Requested-With, Access-Control-Request-Method, " +
-                    "Access-Control-Request-Headers");
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*");
 
             headers.set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
                     "Authorization, x-employee-id, Location");
