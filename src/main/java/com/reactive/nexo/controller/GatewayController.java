@@ -76,6 +76,7 @@ public class GatewayController {
      
     }
     private WebClient getWebClient(String path){
+        // Primero intentar match exacto con los primeros 3 segmentos (rutas /api/v1/xxx)
         String[] segments = path.split("/");
         String[] relevantSegments = Arrays.stream(segments)
                                           .filter(s -> !s.isEmpty())
@@ -87,8 +88,18 @@ public class GatewayController {
                               .limit(limit)
                               .collect(Collectors.joining("/", "/", ""));
         
-        logger.info("Este es un mensaje de información: "+ result);
-        return webClients.get(result);
+        logger.info("GatewayController.getWebClient - resolved key: {}", result);
+
+        WebClient client = webClients.get(result);
+
+        // Si no encontró con 3 segmentos, intentar con 1 segmento (ej: /graphql)
+        if (client == null && relevantSegments.length >= 1) {
+            String singleSegment = "/" + relevantSegments[0];
+            logger.info("GatewayController.getWebClient - fallback to single segment: {}", singleSegment);
+            client = webClients.get(singleSegment);
+        }
+
+        return client;
     }
 
     private String buildCompleteUri(String path, String queryString) {
