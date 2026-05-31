@@ -64,6 +64,7 @@ public class GatewayController {
         webClients.put("/api/v1/appointments", WebClient.create(urlAppointments));
         webClients.put("/api/v1/rols", webClients.get("/api/v1/employees"));
         webClients.put("/api/v1/form-builder", WebClient.create(urlHistory));
+        webClients.put("/graphql", webClients.get("/api/v1/form-builder"));
         webClients.put("/api/v1/convenios", WebClient.create(urlConvenios));
         webClients.put("/api/v1/billing", WebClient.create(urlBilling));
         // Rutas de auth apuntan al servicio de employees (maneja login/JWT)
