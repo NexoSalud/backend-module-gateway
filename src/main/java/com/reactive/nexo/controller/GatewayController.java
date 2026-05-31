@@ -39,6 +39,7 @@ public class GatewayController {
     private String urlAppointments = System.getenv().getOrDefault("APPOINTMENTS_SERVICE_URL", "http://localhost:8084");
     private String urlHistory = System.getenv().getOrDefault("HISTORY_TEMPLATE_SERVICE_URL", "http://localhost:8085");
     private String urlConvenios = System.getenv().getOrDefault("CONVENIOS_SERVICE_URL", "http://localhost:8086");
+    private String urlBilling = System.getenv().getOrDefault("BILLING_SERVICE_URL", "http://localhost:8087");
 
     private final Map<String, WebClient>  webClients;
 
@@ -53,6 +54,7 @@ public class GatewayController {
         logger.info("URL Schedule: {}", urlSchedule);
         logger.info("URL Appointments: {}", urlAppointments);
         logger.info("URL Convenios: {}", urlConvenios);
+        logger.info("URL Billing: {}", urlBilling);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
@@ -64,6 +66,13 @@ public class GatewayController {
         webClients.put("/api/v1/form-builder", WebClient.create(urlHistory));
         webClients.put("/graphql", webClients.get("/api/v1/form-builder"));
         webClients.put("/api/v1/convenios", WebClient.create(urlConvenios));
+        webClients.put("/api/v1/billing", WebClient.create(urlBilling));
+        // Rutas de auth apuntan al servicio de employees (maneja login/JWT)
+        webClients.put("/api/v1/auth", webClients.get("/api/v1/employees"));
+        webClients.put("/api/v1/headquarters", webClients.get("/api/v1/employees"));
+        webClients.put("/api/v1/service-types", webClients.get("/api/v1/schedule"));
+        webClients.put("/api/v1/specialties", webClients.get("/api/v1/schedule"));
+        webClients.put("/api/v1/tracking", webClients.get("/api/v1/employees"));
      
     }
     private WebClient getWebClient(String path){
@@ -135,19 +144,13 @@ public class GatewayController {
         String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
-        //logger.info("Este es un mensaje de información: "+ webClient);
 
-        webClient.mutate().filter((request, next) -> {
-            logger.info("La URL base configurada es: " + request.url());
-            return next.exchange(request);
-        }).build();
-        
         if(webClient == null){
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error+path));
         }
         return webClient.get()
             .uri(completeUri)
-            .headers(h -> h.addAll(exchange.getRequest().getHeaders())) // forward headers
+            .headers(h -> h.addAll(exchange.getRequest().getHeaders()))
             .exchangeToMono(clientResponse -> clientResponse.toEntity(String.class))
             .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service")));
     }

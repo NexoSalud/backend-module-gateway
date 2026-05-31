@@ -2,61 +2,63 @@ package com.reactive.nexo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsWebFilter;
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-
+/**
+ * Filtro CORS global con la máxima prioridad.
+ *
+ * Inyecta los headers Access-Control-* en TODAS las respuestas que
+ * salen del gateway, incluyendo las que vienen de microservicios
+ * forwarded por GatewayController. Esto evita tener que configurar
+ * CORS en cada microservicio individualmente.
+ */
 @Configuration
 public class WebCorsConfiguration {
 
     @Bean
-    public CorsWebFilter corsWebFilter() {
-        CorsConfiguration corsConfig = new CorsConfiguration();
-        
-        // Permitir orígenes específicos incluyendo tu ambiente local
-        corsConfig.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*",
-            "https://localhost:*",
-            "http://local.nexosalud:*",
-            "https://local.nexosalud:*",
-            "http://127.0.0.1:*",
-            "https://127.0.0.1:*"
-        ));
-        
-        // Permitir todos los headers necesarios
-        corsConfig.setAllowedHeaders(Arrays.asList(
-            "Authorization",
-            "Content-Type",
-            "Accept",
-            "x-employee-id",
-            "X-Requested-With",
-            "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
-        ));
-        
-        // Permitir todos los métodos HTTP
-        corsConfig.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-        ));
-        
-        // Permitir envío de credenciales (cookies, headers de autorización)
-        corsConfig.setAllowCredentials(true);
-        
-        // Exponer headers personalizados en la respuesta
-        corsConfig.setExposedHeaders(Arrays.asList(
-            "Authorization",
-            "x-employee-id",
-            "Location"
-        ));
-        
-        // Configurar tiempo de cache para preflight requests
-        corsConfig.setMaxAge(3600L);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfig);
-        
-        return new CorsWebFilter(source);
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public WebFilter corsFilter() {
+        return (ServerWebExchange exchange, WebFilterChain chain) -> {
+            ServerHttpRequest request = exchange.getRequest();
+            ServerHttpResponse response = exchange.getResponse();
+            HttpHeaders headers = response.getHeaders();
+
+            // Origen permitido: el que viene en el request, o * si no hay
+            String origin = request.getHeaders().getFirst(HttpHeaders.ORIGIN);
+            if (origin != null && !origin.isBlank()) {
+                headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            } else {
+                headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+            }
+
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+                    "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*");
+
+            headers.set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                    "Authorization, x-employee-id, Location");
+
+            headers.set(HttpHeaders.ACCESS_CONTROL_MAX_AGE, "3600");
+
+            // Responder inmediatamente a preflight OPTIONS sin pasar al controller
+            if (HttpMethod.OPTIONS.equals(request.getMethod())) {
+                response.setStatusCode(HttpStatus.OK);
+                return response.setComplete();
+            }
+
+            return chain.filter(exchange);
+        };
     }
 }

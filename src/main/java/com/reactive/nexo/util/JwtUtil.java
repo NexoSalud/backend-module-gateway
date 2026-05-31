@@ -18,11 +18,11 @@ import java.util.Map;
 @Slf4j
 public class JwtUtil {
 
-    @Value("${jwt.secret:mySecretKeyForJWTTokenGenerationAndValidation1234567890}")
-    private String jwtSecret;
+    //@Value("${jwt.secret:mySecretKeyForJWTTokenGenerationAndValidation1234567890}")
+    private String jwtSecret = System.getenv().getOrDefault("JWT_SECRET","mySecretKeyForJWTTokenGenerationAndValidation1234567890");
 
-    @Value("${jwt.expiration:3600000}")  // Default 1 hour in milliseconds
-    private long jwtExpiration;
+    //@Value("${jwt.expiration:3600000}")  // Default 1 hour in milliseconds
+    private long jwtExpiration = Long.parseLong(System.getenv().getOrDefault("JWT_EXPIRATION", "3600000"));
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -79,6 +79,23 @@ public class JwtUtil {
             log.warn("Token validation failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Generate a password reset JWT token
+     */
+    public String generatePasswordResetToken(String email, String employeeId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("employee_id", employeeId);
+        claims.put("type", "password_reset");
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 3600000L)) // 1 hora
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     /**
