@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 @RestController
-@RequestMapping("/tracking")
+@RequestMapping("/api/v1/tracking")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Tracking", description = "API para consultar registros de tracking de acciones ejecutadas")
