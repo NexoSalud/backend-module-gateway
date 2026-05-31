@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @Slf4j
 public class SessionController {
 
@@ -137,7 +137,7 @@ public class SessionController {
             
             // Make PATCH request to employees module
             //@Value("${service.employees.url}")
-            String employeesUrl = "http://localhost:8081"; // URL del módulo employees
+            String employeesUrl = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8082");
             WebClient webClient = webClientBuilder.baseUrl(employeesUrl).build();
             
             return webClient.patch()

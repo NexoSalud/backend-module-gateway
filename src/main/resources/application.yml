@@ -10,7 +10,7 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
   webflux:
-    base-path: /api/v1
+    # base-path removido — el gateway maneja el prefijo /api/v1 en los controllers
     # CORS gestionado por WebCorsConfiguration.java (lee CORS_ALLOWED_ORIGINS env var)
 
 logging:

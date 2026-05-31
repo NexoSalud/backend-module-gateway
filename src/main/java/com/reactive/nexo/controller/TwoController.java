@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 
 @RestController
-@RequestMapping("/2fa")
+@RequestMapping("/api/v1/2fa")
 @Slf4j
 public class TwoController {
 
