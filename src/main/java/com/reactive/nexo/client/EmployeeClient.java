@@ -16,7 +16,7 @@ public class EmployeeClient {
     private final WebClient client;
 
     public EmployeeClient() {
-        String url = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8082");
+        String url = System.getenv().getOrDefault("EMPLOYEES_SERVICE_URL", "http://localhost:8081");
         this.client = WebClient.create(url);
         log.info("EmployeeClient initialized with URL: {}", url);
     }

@@ -68,11 +68,11 @@ public class GatewayController {
         webClients.put("/api/v1/convenios", WebClient.create(urlConvenios));
         webClients.put("/api/v1/billing", WebClient.create(urlBilling));
         // Rutas de auth apuntan al servicio de employees (maneja login/JWT)
-        webClients.put("/api/v1/auth", webClients.get("/api/v1/employees"));
+        /*webClients.put("/api/v1/auth", webClients.get("/api/v1/employees"));
         webClients.put("/api/v1/headquarters", webClients.get("/api/v1/employees"));
         webClients.put("/api/v1/service-types", webClients.get("/api/v1/schedule"));
         webClients.put("/api/v1/specialties", webClients.get("/api/v1/schedule"));
-        webClients.put("/api/v1/tracking", webClients.get("/api/v1/employees"));
+        webClients.put("/api/v1/tracking", webClients.get("/api/v1/employees"));*/
      
     }
     private WebClient getWebClient(String path){
