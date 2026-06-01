@@ -19,7 +19,7 @@ public class PermissionChecker {
     public boolean hasPermission(String requestMethod, String requestPath,List<Map<String, Object>> permissions) {
         String normalizedPath = requestPath.startsWith("/") ? requestPath : "/" + requestPath;
         normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
-        //normalizedPath = normalizedPath.contains("?") ? normalizedPath.substring(0, normalizedPath.indexOf("?")) : normalizedPath;
+        //normalizedPath = normalizedPath.contains("?") ? normalizedPath.substring(0, normalizedPath.indexOf("?")) : normalizedPath;               
         
         if(normalizedPath.startsWith("/api/v1/2fa/")){
             return true;
