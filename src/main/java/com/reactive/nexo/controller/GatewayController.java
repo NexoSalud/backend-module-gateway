@@ -40,6 +40,7 @@ public class GatewayController {
     private String urlHistory = System.getenv().getOrDefault("HISTORY_TEMPLATE_SERVICE_URL", "http://localhost:8085");
     private String urlConvenios = System.getenv().getOrDefault("CONVENIOS_SERVICE_URL", "http://localhost:8086");
     private String urlBilling = System.getenv().getOrDefault("BILLING_SERVICE_URL", "http://localhost:8087");
+    private String urlClinicalRules = System.getenv().getOrDefault("CLINICAL_RULES_SERVICE_URL", "http://localhost:8088");
 
     private final Map<String, WebClient>  webClients;
 
@@ -55,6 +56,7 @@ public class GatewayController {
         logger.info("URL Appointments: {}", urlAppointments);
         logger.info("URL Convenios: {}", urlConvenios);
         logger.info("URL Billing: {}", urlBilling);
+        logger.info("URL Clinical Rules: {}", urlClinicalRules);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
@@ -67,6 +69,7 @@ public class GatewayController {
         webClients.put("/graphql", webClients.get("/api/v1/form-builder"));
         webClients.put("/api/v1/convenios", WebClient.create(urlConvenios));
         webClients.put("/api/v1/billing", WebClient.create(urlBilling));
+        webClients.put("/api/v1/clinical-rules", WebClient.create(urlClinicalRules));
         // Rutas de auth apuntan al servicio de employees (maneja login/JWT)
         /*webClients.put("/api/v1/auth", webClients.get("/api/v1/employees"));
         webClients.put("/api/v1/headquarters", webClients.get("/api/v1/employees"));
@@ -76,6 +79,13 @@ public class GatewayController {
      
     }
     private WebClient getWebClient(String path){
+        if (path.startsWith("/history-template/graphql")) {
+            return webClients.get("/api/v1/form-builder");
+        }
+        if (path.startsWith("/clinical-rules/graphql")) {
+            return webClients.get("/api/v1/clinical-rules");
+        }
+
         // Primero intentar match exacto con los primeros 3 segmentos (rutas /api/v1/xxx)
         String[] segments = path.split("/");
         String[] relevantSegments = Arrays.stream(segments)
@@ -102,6 +112,16 @@ public class GatewayController {
         return client;
     }
 
+    private String getTargetUri(String path, String queryString) {
+        String targetPath = path;
+        if (path.startsWith("/history-template/graphql")) {
+            targetPath = "/graphql";
+        } else if (path.startsWith("/clinical-rules/graphql")) {
+            targetPath = "/graphql";
+        }
+        return buildCompleteUri(targetPath, queryString);
+    }
+
     private String buildCompleteUri(String path, String queryString) {
         if (queryString != null && !queryString.isEmpty()) {
             return path + "?" + queryString;
@@ -117,7 +137,7 @@ public class GatewayController {
     public Mono<ResponseEntity<String>> forwardPostRequests(ServerWebExchange exchange) {
    
         String path = exchange.getRequest().getPath().toString();
-        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        String completeUri = getTargetUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
@@ -152,7 +172,7 @@ public class GatewayController {
     @GetMapping("/**")
     public Mono<ResponseEntity<String>> forwardGetRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
-        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        String completeUri = getTargetUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
 
@@ -169,7 +189,7 @@ public class GatewayController {
     @PutMapping("/**")
     public Mono<ResponseEntity<String>> forwardPutRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
-        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        String completeUri = getTargetUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
@@ -201,7 +221,7 @@ public class GatewayController {
     @PatchMapping("/**")
     public Mono<ResponseEntity<String>> forwardPatchRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
-        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        String completeUri = getTargetUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){
@@ -233,7 +253,7 @@ public class GatewayController {
     @DeleteMapping("/**")
     public Mono<ResponseEntity<String>> forwardDeleteRequests(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().toString();
-        String completeUri = buildCompleteUri(path, exchange.getRequest().getURI().getQuery());
+        String completeUri = getTargetUri(path, exchange.getRequest().getURI().getQuery());
         
         WebClient webClient = this.getWebClient(path);
         if(webClient == null){

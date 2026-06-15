@@ -37,8 +37,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 
         // Rutas públicas — no requieren JWT
         if (path.startsWith("/api/v1/auth")
-                || path.startsWith("/graphql")
-                || path.startsWith("/api/v1/graphql")
+                || path.contains("/graphql")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/webjars")
