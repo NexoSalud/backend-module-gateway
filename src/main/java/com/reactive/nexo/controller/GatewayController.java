@@ -40,7 +40,8 @@ public class GatewayController {
     private String urlHistory = System.getenv().getOrDefault("HISTORY_TEMPLATE_SERVICE_URL", "http://localhost:8085");
     private String urlConvenios = System.getenv().getOrDefault("CONVENIOS_SERVICE_URL", "http://localhost:8086");
     private String urlBilling = System.getenv().getOrDefault("BILLING_SERVICE_URL", "http://localhost:8087");
-    private String urlClinicalRules = System.getenv().getOrDefault("CLINICAL_RULES_SERVICE_URL", "http://localhost:8088");
+    private String urlClinicalRules = System.getenv().getOrDefault("CLINICAL_RULES_SERVICE_URL", "http://localhost:8089");
+    private String urlSiau = System.getenv().getOrDefault("SIAU_SERVICE_URL", "http://localhost:8088");
 
     private final Map<String, WebClient>  webClients;
 
@@ -57,6 +58,7 @@ public class GatewayController {
         logger.info("URL Convenios: {}", urlConvenios);
         logger.info("URL Billing: {}", urlBilling);
         logger.info("URL Clinical Rules: {}", urlClinicalRules);
+        logger.info("URL SIAU: {}", urlSiau);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
@@ -71,11 +73,13 @@ public class GatewayController {
         webClients.put("/api/v1/billing", WebClient.create(urlBilling));
         webClients.put("/api/v1/clinical-rules", WebClient.create(urlClinicalRules));
         // Rutas de auth apuntan al servicio de employees (maneja login/JWT)
-        /*webClients.put("/api/v1/auth", webClients.get("/api/v1/employees"));
+        webClients.put("/api/v1/auth", webClients.get("/api/v1/employees"));
         webClients.put("/api/v1/headquarters", webClients.get("/api/v1/employees"));
         webClients.put("/api/v1/service-types", webClients.get("/api/v1/schedule"));
         webClients.put("/api/v1/specialties", webClients.get("/api/v1/schedule"));
-        webClients.put("/api/v1/tracking", webClients.get("/api/v1/employees"));*/
+        webClients.put("/api/v1/tracking", webClients.get("/api/v1/employees"));
+        // Rutas SIAU - PQRSDF
+        webClients.put("/api/v1/siau", WebClient.create(urlSiau));
      
     }
     private WebClient getWebClient(String path){
