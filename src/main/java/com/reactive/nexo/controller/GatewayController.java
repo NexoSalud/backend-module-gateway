@@ -42,6 +42,7 @@ public class GatewayController {
     private String urlBilling = System.getenv().getOrDefault("BILLING_SERVICE_URL", "http://localhost:8087");
     private String urlClinicalRules = System.getenv().getOrDefault("CLINICAL_RULES_SERVICE_URL", "http://localhost:8089");
     private String urlSiau = System.getenv().getOrDefault("SIAU_SERVICE_URL", "http://localhost:8088");
+    private String urlEbs = System.getenv().getOrDefault("EBS_CONTRACTS_SERVICE_URL", "http://localhost:8089");
 
     private final Map<String, WebClient>  webClients;
 
@@ -59,6 +60,7 @@ public class GatewayController {
         logger.info("URL Billing: {}", urlBilling);
         logger.info("URL Clinical Rules: {}", urlClinicalRules);
         logger.info("URL SIAU: {}", urlSiau);
+        logger.info("URL EBS Contracts: {}", urlEbs);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
@@ -80,6 +82,8 @@ public class GatewayController {
         webClients.put("/api/v1/tracking", webClients.get("/api/v1/employees"));
         // Rutas SIAU - PQRSDF
         webClients.put("/api/v1/siau", WebClient.create(urlSiau));
+        // Rutas EBS - Gestión de Contratos
+        webClients.put("/api/v1/ebs", WebClient.create(urlEbs));
      
     }
     private WebClient getWebClient(String path){
