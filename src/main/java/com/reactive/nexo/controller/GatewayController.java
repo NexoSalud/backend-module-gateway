@@ -152,6 +152,37 @@ public class GatewayController {
         }
         logger.info("GateWay -> Forwarding POST request to: " + completeUri);
 
+        // Detect if this is a multipart upload (file upload)
+        MediaType incomingContentType = exchange.getRequest().getHeaders().getContentType();
+        boolean isMultipart = incomingContentType != null && 
+            incomingContentType.toString().toLowerCase().contains("multipart/form-data");
+
+        if (isMultipart) {
+            // Forward raw bytes for multipart (preserve Content-Type with boundary)
+            return DataBufferUtils.join(exchange.getRequest().getBody())
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    DataBufferUtils.release(dataBuffer);
+                    return bytes;
+                })
+                .flatMap(rawBytes -> webClient.post()
+                    .uri(completeUri)
+                    .contentType(incomingContentType)
+                    .bodyValue(rawBytes)
+                    .exchangeToMono(clientResponse ->
+                        clientResponse.bodyToMono(byte[].class)
+                            .map(respBytes -> ResponseEntity.status(clientResponse.statusCode())
+                                .headers(h -> h.addAll(clientResponse.headers().asHttpHeaders()))
+                                .body(respBytes))
+                            .defaultIfEmpty(ResponseEntity.status(clientResponse.statusCode()).build()))
+                    .onErrorResume(e -> {
+                        logger.error("Error forwarding multipart POST: ", e);
+                        return Mono.just(ResponseEntity.internalServerError().body("Gateway Error: Cannot reach backend service".getBytes()));
+                    }));
+        }
+
+        // Standard JSON handling
         Mono<String> bodyMono = DataBufferUtils.join(exchange.getRequest().getBody())
             .map(dataBuffer -> {
                 byte[] bytes = new byte[dataBuffer.readableByteCount()];
