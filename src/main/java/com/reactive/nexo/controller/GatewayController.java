@@ -43,6 +43,7 @@ public class GatewayController {
     private String urlClinicalRules = System.getenv().getOrDefault("CLINICAL_RULES_SERVICE_URL", "http://localhost:8089");
     private String urlSiau = System.getenv().getOrDefault("SIAU_SERVICE_URL", "http://localhost:8088");
     private String urlEbs = System.getenv().getOrDefault("EBS_CONTRACTS_SERVICE_URL", "http://localhost:8089");
+    private String urlAuthSched = System.getenv().getOrDefault("AUTORIZACION_SERVICE_URL", "http://autorizacion-service:8090");
 
     private final Map<String, WebClient>  webClients;
 
@@ -61,6 +62,7 @@ public class GatewayController {
         logger.info("URL Clinical Rules: {}", urlClinicalRules);
         logger.info("URL SIAU: {}", urlSiau);
         logger.info("URL EBS Contracts: {}", urlEbs);
+        logger.info("URL Autorizacion y Agendamiento: {}", urlAuthSched);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
@@ -84,6 +86,8 @@ public class GatewayController {
         webClients.put("/api/v1/siau", WebClient.create(urlSiau));
         // Rutas EBS - Gestión de Contratos
         webClients.put("/api/v1/ebs", WebClient.create(urlEbs));
+        // Rutas Autorización y Agendamiento
+        webClients.put("/api/v1/authorization-and-scheduling", WebClient.create(urlAuthSched));
      
     }
     private WebClient getWebClient(String path){
