@@ -44,6 +44,7 @@ public class GatewayController {
     private String urlSiau = System.getenv().getOrDefault("SIAU_SERVICE_URL", "http://localhost:8088");
     private String urlEbs = System.getenv().getOrDefault("EBS_CONTRACTS_SERVICE_URL", "http://localhost:8089");
     private String urlAuthSched = System.getenv().getOrDefault("AUTORIZACION_SERVICE_URL", "http://autorizacion-service:8090");
+    private String urlUtils = System.getenv().getOrDefault("UTILS_SERVICE_URL", "http://localhost:8090");
 
     private final Map<String, WebClient>  webClients;
 
@@ -63,6 +64,7 @@ public class GatewayController {
         logger.info("URL SIAU: {}", urlSiau);
         logger.info("URL EBS Contracts: {}", urlEbs);
         logger.info("URL Autorizacion y Agendamiento: {}", urlAuthSched);
+        logger.info("URL Utils: {}", urlUtils);
         
         webClients.put("/api/v1/users", WebClient.create(urlUsers));
         webClients.put("/api/v1/employees", WebClient.create(urlEmployees));
@@ -88,6 +90,10 @@ public class GatewayController {
         webClients.put("/api/v1/ebs", WebClient.create(urlEbs));
         // Rutas Autorización y Agendamiento
         webClients.put("/api/v1/authorization-and-scheduling", WebClient.create(urlAuthSched));
+        // Rutas Utils - Fuentes de Datos
+        webClients.put("/api/v1/utils", WebClient.create(urlUtils));
+        // GraphQL proxy routes for modules behind the gateway
+        webClients.put("/utils/graphql", webClients.get("/api/v1/utils"));
      
     }
     private WebClient getWebClient(String path){
@@ -96,6 +102,9 @@ public class GatewayController {
         }
         if (path.startsWith("/clinical-rules/graphql")) {
             return webClients.get("/api/v1/clinical-rules");
+        }
+        if (path.startsWith("/utils/graphql")) {
+            return webClients.get("/api/v1/utils");
         }
 
         // Primero intentar match exacto con los primeros 3 segmentos (rutas /api/v1/xxx)
@@ -129,6 +138,8 @@ public class GatewayController {
         if (path.startsWith("/history-template/graphql")) {
             targetPath = "/graphql";
         } else if (path.startsWith("/clinical-rules/graphql")) {
+            targetPath = "/graphql";
+        } else if (path.startsWith("/utils/graphql")) {
             targetPath = "/graphql";
         }
         return buildCompleteUri(targetPath, queryString);
